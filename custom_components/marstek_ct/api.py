@@ -18,7 +18,7 @@ class MarstekCtApi:
         self._battery_mac = battery_mac
         self._ct_mac = ct_mac
         self._ct_type = ct_type
-        self._timeout = 5.0
+        self._timeout = 2.0
         self._payload = self._build_payload()
 
     def _build_payload(self) -> bytes:
