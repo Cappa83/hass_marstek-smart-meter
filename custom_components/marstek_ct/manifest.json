@@ -5,7 +5,7 @@
   "documentation": "https://github.com/Cappa83/hass_marstek-smart-meter",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Cappa83/hass_marstek-smart-meter/issues",
-  "version": "0.1.1,
+  "version": "0.1.1",
   "codeowners": ["@cappa83"],
   "requirements": []
 }
