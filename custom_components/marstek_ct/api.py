@@ -9,6 +9,33 @@ SOH = 0x01
 STX = 0x02
 ETX = 0x03
 
+RESPONSE_LABELS = (
+    "meter_dev_type",
+    "meter_mac_code",
+    "hhm_dev_type",
+    "hhm_mac_code",
+    "A_phase_power",
+    "B_phase_power",
+    "C_phase_power",
+    "total_power",
+    "A_chrg_nb",
+    "B_chrg_nb",
+    "C_chrg_nb",
+    "ABC_chrg_nb",
+    "wifi_rssi",
+    "info_idx",
+    "x_chrg_power",
+    "A_chrg_power",
+    "B_chrg_power",
+    "C_chrg_power",
+    "ABC_chrg_power",
+    "x_dchrg_power",
+    "A_dchrg_power",
+    "B_dchrg_power",
+    "C_dchrg_power",
+    "ABC_dchrg_power",
+)
+
 
 class MarstekCtApi:
     """API to communicate with the Marstek CT meter."""
@@ -89,25 +116,19 @@ class MarstekCtApi:
 
         fields = message.split("|")[1:]
 
-        labels = [
-            "meter_dev_type", "meter_mac_code", "hhm_dev_type", "hhm_mac_code",
-            "A_phase_power", "B_phase_power", "C_phase_power", "total_power",
-            "A_chrg_nb", "B_chrg_nb", "C_chrg_nb", "ABC_chrg_nb", "wifi_rssi",
-            "info_idx", "x_chrg_power", "A_chrg_power", "B_chrg_power", "C_chrg_power",
-            "ABC_chrg_power", "x_dchrg_power", "A_dchrg_power", "B_dchrg_power",
-            "C_dchrg_power", "ABC_dchrg_power",
-        ]
-
         parsed: dict[str, object] = {}
-        for i, label in enumerate(labels):
-            val = fields[i] if i < len(fields) else None
-            if val is None or val == "":
+        for label, val in zip(RESPONSE_LABELS, fields):
+            if val == "":
                 parsed[label] = None
                 continue
             try:
                 parsed[label] = int(val)
             except ValueError:
                 parsed[label] = val
+
+        if len(fields) < len(RESPONSE_LABELS):
+            for label in RESPONSE_LABELS[len(fields):]:
+                parsed[label] = None
 
         return parsed
 
@@ -116,12 +137,11 @@ class MarstekCtApi:
         last_error = None
 
         for attempt in range(1, self._retries + 1):
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.settimeout(self._timeout)
-
             try:
-                sock.sendto(self._payload, (self._host, self._port))
-                response, _ = sock.recvfrom(2048)
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                    sock.settimeout(self._timeout)
+                    sock.sendto(self._payload, (self._host, self._port))
+                    response, _ = sock.recvfrom(2048)
                 return self._decode_response(response)
 
             except socket.timeout:
@@ -141,9 +161,6 @@ class MarstekCtApi:
                     self._retries,
                     e,
                 )
-
-            finally:
-                sock.close()
 
             if attempt < self._retries:
                 time.sleep(self._retry_delay)
