@@ -130,7 +130,19 @@ class MarstekCtApi:
             for label in RESPONSE_LABELS[len(fields):]:
                 parsed[label] = None
 
+        self._derive_signed_battery_power(parsed)
+
         return parsed
+
+    def _derive_signed_battery_power(self, parsed: dict[str, object]) -> None:
+        """Derive signed battery flow from native charge/discharge fields only."""
+        charge_power = parsed.get("ABC_chrg_power")
+        discharge_power = parsed.get("ABC_dchrg_power")
+        if not isinstance(charge_power, int) or not isinstance(discharge_power, int):
+            parsed["battery_power"] = None
+            return
+
+        parsed["battery_power"] = discharge_power - charge_power
 
     def fetch_data(self) -> dict:
         """Fetch data from the meter with controlled retry (blocking)."""
